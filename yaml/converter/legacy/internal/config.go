@@ -111,16 +111,39 @@ func Convert(d []byte) ([]byte, error) {
 
 			services := make([]*droneyaml.Container, 0)
 			for _, service := range current.Services {
-				if len(service.When.Matrix) == 0 {
+				if len(service.When.Matrix.Exclude) == 0 && len(service.When.Matrix.Include) == 0 {
 					services = append(services, service)
 					continue
 				}
-
-				for whenKey, whenValue := range service.When.Matrix {
+				skip := false
+				for whenKey, whenValue := range service.When.Matrix.Exclude {
+					if skip {
+						break
+					}
+					for envKey, envValue := range environ {
+						if whenKey == envKey && whenValue == envValue {
+							skip = true
+							break
+						}
+					}
+				}
+				if skip {
+					continue
+				}
+				if len(service.When.Matrix.Exclude) != 0 {
+					services = append(services, service)
+					continue
+				}
+				for whenKey, whenValue := range service.When.Matrix.Include {
 					for envKey, envValue := range environ {
 						if whenKey == envKey && whenValue == envValue {
 							services = append(services, service)
+							skip = true
+							break
 						}
+					}
+					if skip {
+						break
 					}
 				}
 			}
@@ -128,16 +151,39 @@ func Convert(d []byte) ([]byte, error) {
 
 			steps := make([]*droneyaml.Container, 0)
 			for _, step := range current.Steps {
-				if len(step.When.Matrix) == 0 {
+				if len(step.When.Matrix.Exclude) == 0 && len(step.When.Matrix.Include) == 0 {
 					steps = append(steps, step)
 					continue
 				}
-
-				for whenKey, whenValue := range step.When.Matrix {
+				skip := false
+				for whenKey, whenValue := range step.When.Matrix.Exclude {
+					if skip {
+						break
+					}
+					for envKey, envValue := range environ {
+						if whenKey == envKey && whenValue == envValue {
+							skip = true
+							break
+						}
+					}
+				}
+				if skip {
+					continue
+				}
+				if len(step.When.Matrix.Exclude) != 0 {
+					steps = append(steps, step)
+					continue
+				}
+				for whenKey, whenValue := range step.When.Matrix.Include {
 					for envKey, envValue := range environ {
 						if whenKey == envKey && whenValue == envValue {
 							steps = append(steps, step)
+							skip = true
+							break
 						}
+					}
+					if skip {
+						break
 					}
 				}
 			}
@@ -232,7 +278,10 @@ func toConditions(from Constraints) droneyaml.Conditions {
 			Include: from.Status.Include,
 			Exclude: from.Status.Exclude,
 		},
-		Matrix: from.Matrix,
+		Matrix: droneyaml.ConditionMap{
+			Include: from.Matrix.Include,
+			Exclude: from.Matrix.Exclude,
+		},
 	}
 }
 

@@ -18,23 +18,28 @@ import filepath "github.com/bmatcuk/doublestar"
 
 // Conditions defines a group of conditions.
 type Conditions struct {
-	Action   Condition         `json:"action,omitempty"`
-	Cron     Condition         `json:"cron,omitempty"`
-	Ref      Condition         `json:"ref,omitempty"`
-	Repo     Condition         `json:"repo,omitempty"`
-	Instance Condition         `json:"instance,omitempty"`
-	Target   Condition         `json:"target,omitempty"`
-	Event    Condition         `json:"event,omitempty"`
-	Branch   Condition         `json:"branch,omitempty"`
-	Status   Condition         `json:"status,omitempty"`
-	Paths    Condition         `json:"paths,omitempty"`
-	Matrix   map[string]string `json:"matrix,omitempty"`
+	Action   Condition    `json:"action,omitempty"`
+	Cron     Condition    `json:"cron,omitempty"`
+	Ref      Condition    `json:"ref,omitempty"`
+	Repo     Condition    `json:"repo,omitempty"`
+	Instance Condition    `json:"instance,omitempty"`
+	Target   Condition    `json:"target,omitempty"`
+	Event    Condition    `json:"event,omitempty"`
+	Branch   Condition    `json:"branch,omitempty"`
+	Status   Condition    `json:"status,omitempty"`
+	Paths    Condition    `json:"paths,omitempty"`
+	Matrix   ConditionMap `json:"matrix,omitempty"`
 }
 
 // Condition defines a runtime condition.
 type Condition struct {
 	Include []string `yaml:"include,omitempty" json:"include,omitempty"`
 	Exclude []string `yaml:"exclude,omitempty" json:"exclude,omitempty"`
+}
+
+type ConditionMap struct {
+	Include map[string]string
+	Exclude map[string]string
 }
 
 // Match returns true if the string matches the include
@@ -98,5 +103,28 @@ func (c *Condition) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		out2...,
 	)
 
+	return nil
+}
+
+// UnmarshalYAML unmarshals the condition map.
+func (c *ConditionMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	out1 := struct {
+		Include map[string]string
+		Exclude map[string]string
+	}{
+		Include: map[string]string{},
+		Exclude: map[string]string{},
+	}
+
+	out2 := map[string]string{}
+
+	unmarshal(&out1)
+	unmarshal(&out2)
+
+	c.Include = out1.Include
+	c.Exclude = out1.Exclude
+	for k, v := range out2 {
+		c.Include[k] = v
+	}
 	return nil
 }
